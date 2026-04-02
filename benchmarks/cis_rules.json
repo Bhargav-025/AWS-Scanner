@@ -1,0 +1,128 @@
+[
+	{
+		"id": "1.1",
+		"title": "Avoid the use of the root account",
+		"service": "IAM",
+		"severity": "CRITICAL",
+		"description": "The AWS root account has unrestricted access to all resources; regular use significantly increases blast radius if credentials are compromised."
+	},
+	{
+		"id": "1.5",
+		"title": "Ensure MFA is enabled for the root account",
+		"service": "IAM",
+		"severity": "CRITICAL",
+		"description": "Root account MFA is a fundamental control against account takeover and unauthorized privileged access."
+	},
+	{
+		"id": "1.6",
+		"title": "Ensure hardware MFA is enabled for the root account",
+		"service": "IAM",
+		"severity": "HIGH",
+		"description": "Hardware-backed MFA on the root account reduces phishing and SIM-swap risks compared with weaker factors."
+	},
+	{
+		"id": "1.8",
+		"title": "Ensure IAM password policy requires strong passwords",
+		"service": "IAM",
+		"severity": "HIGH",
+		"description": "Weak account password policies increase risk of brute-force and credential-stuffing attacks against console users."
+	},
+	{
+		"id": "1.9",
+		"title": "Ensure IAM password policy prevents password reuse",
+		"service": "IAM",
+		"severity": "MEDIUM",
+		"description": "Password reuse allows previously exposed credentials to be used again and weakens account hygiene."
+	},
+	{
+		"id": "1.10",
+		"title": "Ensure MFA is enabled for all IAM users with console password",
+		"service": "IAM",
+		"severity": "HIGH",
+		"description": "Console users without MFA are vulnerable to credential theft and unauthorized sign-in."
+	},
+	{
+		"id": "1.12",
+		"title": "Ensure no active access keys for the root account",
+		"service": "IAM",
+		"severity": "CRITICAL",
+		"description": "Root access keys provide long-lived unrestricted API access and are a high-value target for attackers."
+	},
+	{
+		"id": "1.14",
+		"title": "Ensure access keys are rotated every 90 days or less",
+		"service": "IAM",
+		"severity": "MEDIUM",
+		"description": "Long-lived access keys increase exposure time if compromised and reduce credential lifecycle hygiene."
+	},
+	{
+		"id": "2.1.1",
+		"title": "Ensure S3 Block Public Access is enabled at account level",
+		"service": "S3",
+		"severity": "CRITICAL",
+		"description": "Account-level Block Public Access prevents accidental public exposure of buckets and sensitive data leakage."
+	},
+	{
+		"id": "2.1.2",
+		"title": "Ensure S3 buckets are not publicly accessible",
+		"service": "S3",
+		"severity": "CRITICAL",
+		"description": "Publicly accessible buckets can expose confidential data and are a common cause of major cloud breaches."
+	},
+	{
+		"id": "2.1.3",
+		"title": "Ensure S3 bucket versioning is enabled",
+		"service": "S3",
+		"severity": "MEDIUM",
+		"description": "Versioning supports recovery from accidental deletion or malicious overwrites, improving resilience."
+	},
+	{
+		"id": "2.1.4",
+		"title": "Ensure default encryption is enabled for S3 buckets",
+		"service": "S3",
+		"severity": "HIGH",
+		"description": "Encryption at rest for S3 protects data confidentiality and reduces impact of unauthorized storage access."
+	},
+	{
+		"id": "3.1",
+		"title": "Ensure CloudTrail is enabled in all regions",
+		"service": "CloudTrail",
+		"severity": "HIGH",
+		"description": "Multi-region CloudTrail logging is required for complete audit visibility and effective incident response."
+	},
+	{
+		"id": "3.2",
+		"title": "Ensure CloudTrail log file validation is enabled",
+		"service": "CloudTrail",
+		"severity": "HIGH",
+		"description": "Log file integrity validation helps detect tampering and preserves audit evidence trustworthiness."
+	},
+	{
+		"id": "3.3",
+		"title": "Ensure CloudTrail logs are encrypted with KMS",
+		"service": "CloudTrail",
+		"severity": "MEDIUM",
+		"description": "Encrypting CloudTrail logs with KMS strengthens control over audit log confidentiality and key management."
+	},
+	{
+		"id": "3.4",
+		"title": "Ensure CloudTrail is integrated with CloudWatch Logs",
+		"service": "CloudTrail",
+		"severity": "MEDIUM",
+		"description": "CloudTrail-to-CloudWatch integration enables near-real-time detection and alerting for suspicious activity."
+	},
+	{
+		"id": "4.1",
+		"title": "Ensure no security groups allow ingress from 0.0.0.0/0 to port 22",
+		"service": "EC2",
+		"severity": "CRITICAL",
+		"description": "Unrestricted SSH exposure to the internet significantly increases risk of brute-force and unauthorized remote access."
+	},
+	{
+		"id": "4.2",
+		"title": "Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389",
+		"service": "EC2",
+		"severity": "CRITICAL",
+		"description": "Open RDP access from anywhere creates a high-risk attack surface for credential and endpoint compromise."
+	}
+]

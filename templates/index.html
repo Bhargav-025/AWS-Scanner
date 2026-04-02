@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>AWS Security Scanner</title>
+	<style>
+		:root {
+			--bg: #07111f;
+			--bg-2: #0b1727;
+			--panel: #101e31;
+			--panel-2: #14233a;
+			--text: #f5f7fb;
+			--muted: #9fb0c7;
+			--border: #21324a;
+			--accent: #5ea8ff;
+			--accent-2: #7dd3fc;
+			--success: #22c55e;
+			--danger: #ef4444;
+			--warning: #f59e0b;
+			--medium: #facc15;
+			--info: #3b82f6;
+			--shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			background:
+				radial-gradient(circle at top left, rgba(94, 168, 255, 0.16), transparent 30%),
+				radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.10), transparent 24%),
+				linear-gradient(180deg, var(--bg), var(--bg-2));
+			color: var(--text);
+		}
+
+		.app-shell {
+			width: min(1200px, calc(100% - 32px));
+			margin: 0 auto;
+			padding: 28px 0 48px;
+		}
+
+		.app-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 24px;
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+		}
+
+		.brand-mark {
+			width: 52px;
+			height: 52px;
+			display: grid;
+			place-items: center;
+			border-radius: 16px;
+			background: linear-gradient(135deg, rgba(94, 168, 255, 0.26), rgba(125, 211, 252, 0.10));
+			border: 1px solid rgba(125, 211, 252, 0.28);
+			box-shadow: var(--shadow);
+		}
+
+		.brand-mark svg { width: 26px; height: 26px; fill: var(--accent-2); }
+
+		.brand h1 {
+			margin: 0;
+			font-size: clamp(1.6rem, 2.8vw, 2.35rem);
+			line-height: 1.1;
+		}
+
+		.brand p {
+			margin: 4px 0 0;
+			color: var(--muted);
+			font-size: 0.96rem;
+		}
+
+		.status-pill {
+			padding: 10px 14px;
+			border-radius: 999px;
+			border: 1px solid var(--border);
+			background: rgba(255, 255, 255, 0.04);
+			color: var(--muted);
+			font-size: 0.92rem;
+		}
+
+		.panel {
+			background: linear-gradient(180deg, rgba(16, 30, 49, 0.96), rgba(11, 23, 39, 0.98));
+			border: 1px solid rgba(33, 50, 74, 0.95);
+			border-radius: 24px;
+			box-shadow: var(--shadow);
+			overflow: hidden;
+		}
+
+		.view {
+			display: none;
+			padding: 28px;
+		}
+
+		.view.active { display: block; }
+
+		.view-grid {
+			display: grid;
+			grid-template-columns: 1.2fr 0.8fr;
+			gap: 24px;
+		}
+
+		.hero-card,
+		.form-card,
+		.content-card,
+		.summary-card,
+		.table-card,
+		.loading-card {
+			background: rgba(255, 255, 255, 0.03);
+			border: 1px solid rgba(33, 50, 74, 0.9);
+			border-radius: 20px;
+			padding: 22px;
+		}
+
+		.hero-card h2,
+		.form-card h2,
+		.content-card h2,
+		.table-card h2 {
+			margin: 0 0 12px;
+			font-size: 1.35rem;
+		}
+
+		.muted { color: var(--muted); }
+
+		.form-grid {
+			display: grid;
+			gap: 14px;
+			margin-top: 18px;
+		}
+
+		label {
+			display: block;
+			font-size: 0.9rem;
+			color: #d6dfec;
+			margin-bottom: 8px;
+		}
+
+		input,
+		select {
+			width: 100%;
+			border: 1px solid #2a3c55;
+			background: #09111d;
+			color: var(--text);
+			border-radius: 14px;
+			padding: 14px 16px;
+			outline: none;
+			font-size: 0.98rem;
+		}
+
+		input::placeholder { color: #7890ae; }
+
+		input:focus,
+		select:focus {
+			border-color: rgba(94, 168, 255, 0.9);
+			box-shadow: 0 0 0 3px rgba(94, 168, 255, 0.12);
+		}
+
+		.row {
+			display: grid;
+			gap: 14px;
+		}
+
+		.actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 12px;
+			align-items: center;
+		}
+
+		button {
+			border: 0;
+			border-radius: 14px;
+			padding: 13px 18px;
+			font-weight: 700;
+			cursor: pointer;
+			transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+		}
+
+		button:hover { transform: translateY(-1px); }
+
+		.primary {
+			color: #03101c;
+			background: linear-gradient(135deg, var(--accent), var(--accent-2));
+			box-shadow: 0 10px 24px rgba(94, 168, 255, 0.25);
+		}
+
+		.secondary {
+			color: var(--text);
+			background: rgba(255, 255, 255, 0.06);
+			border: 1px solid rgba(33, 50, 74, 0.85);
+		}
+
+		button:disabled {
+			opacity: 0.55;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		.inline-message {
+			margin-top: 14px;
+			padding: 12px 14px;
+			border-radius: 14px;
+			display: none;
+			line-height: 1.5;
+		}
+
+		.inline-message.show { display: block; }
+		.inline-message.error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #fecaca; }
+		.inline-message.success { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.35); color: #bbf7d0; }
+
+		.connect-card {
+			display: grid;
+			gap: 14px;
+		}
+
+		.service-list {
+			display: grid;
+			gap: 12px;
+			margin: 16px 0 0;
+			padding: 0;
+			list-style: none;
+		}
+
+		.service-list li {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 12px 14px;
+			border-radius: 14px;
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid rgba(33, 50, 74, 0.75);
+		}
+
+		.dot {
+			width: 10px;
+			height: 10px;
+			border-radius: 999px;
+			background: var(--accent);
+			box-shadow: 0 0 0 5px rgba(94, 168, 255, 0.12);
+		}
+
+		.account-banner {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: 14px;
+			padding: 16px 18px;
+			border-radius: 18px;
+			background: rgba(94, 168, 255, 0.08);
+			border: 1px solid rgba(94, 168, 255, 0.18);
+			margin-bottom: 18px;
+		}
+
+		.account-banner strong { font-size: 1.05rem; }
+
+		.summary-grid {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 14px;
+		}
+
+		.metric {
+			padding: 16px;
+			border-radius: 18px;
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid rgba(33, 50, 74, 0.75);
+		}
+
+		.metric .label { color: var(--muted); font-size: 0.86rem; margin-bottom: 6px; }
+		.metric .value { font-size: 1.7rem; font-weight: 800; }
+
+		.severity-row {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 12px;
+		}
+
+		.filters {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin: 18px 0 16px;
+		}
+
+		.filter-btn {
+			padding: 10px 14px;
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.05);
+			color: var(--text);
+			border: 1px solid rgba(33, 50, 74, 0.85);
+		}
+
+		.filter-btn.active {
+			background: rgba(94, 168, 255, 0.16);
+			border-color: rgba(94, 168, 255, 0.45);
+			color: #dbeafe;
+		}
+
+		.table-wrap {
+			overflow: auto;
+			border-radius: 18px;
+			border: 1px solid rgba(33, 50, 74, 0.75);
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			min-width: 980px;
+			background: rgba(5, 12, 22, 0.45);
+		}
+
+		th, td {
+			padding: 14px 12px;
+			text-align: left;
+			vertical-align: top;
+			border-bottom: 1px solid rgba(33, 50, 74, 0.7);
+		}
+
+		th {
+			position: sticky;
+			top: 0;
+			background: #0d1726;
+			color: #cbd5e1;
+			font-size: 0.86rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+		}
+
+		tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+		.badge {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 6px 10px;
+			border-radius: 999px;
+			font-size: 0.8rem;
+			font-weight: 800;
+			letter-spacing: 0.02em;
+		}
+
+		.severity-critical { background: rgba(239, 68, 68, 0.15); color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.35); }
+		.severity-high { background: rgba(245, 158, 11, 0.15); color: #fed7aa; border: 1px solid rgba(245, 158, 11, 0.35); }
+		.severity-medium { background: rgba(250, 204, 21, 0.16); color: #fef08a; border: 1px solid rgba(250, 204, 21, 0.35); }
+		.severity-low { background: rgba(59, 130, 246, 0.15); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.35); }
+		.status-pass { color: #86efac; font-weight: 800; }
+		.status-fail { color: #fca5a5; font-weight: 800; }
+
+		.risk-score {
+			font-size: clamp(3.2rem, 8vw, 5rem);
+			font-weight: 900;
+			line-height: 0.95;
+			margin: 4px 0 10px;
+		}
+
+		.risk-high { color: #4ade80; }
+		.risk-medium { color: #f59e0b; }
+		.risk-low { color: #ef4444; }
+
+		.loading-view {
+			display: grid;
+			place-items: center;
+			min-height: 380px;
+			text-align: center;
+		}
+
+		.spinner {
+			width: 70px;
+			height: 70px;
+			border-radius: 999px;
+			border: 7px solid rgba(255, 255, 255, 0.08);
+			border-top-color: var(--accent);
+			animation: spin 0.9s linear infinite;
+			margin: 0 auto 20px;
+		}
+
+		@keyframes spin { to { transform: rotate(360deg); } }
+
+		.footer-actions {
+			display: flex;
+			gap: 12px;
+			flex-wrap: wrap;
+			justify-content: space-between;
+			margin-top: 18px;
+		}
+
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			border: 0;
+		}
+
+		@media (max-width: 960px) {
+			.view-grid { grid-template-columns: 1fr; }
+			.summary-grid, .severity-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.app-header { flex-direction: column; align-items: flex-start; }
+		}
+
+		@media (max-width: 640px) {
+			.app-shell { width: min(100% - 20px, 1200px); padding-top: 16px; }
+			.view { padding: 18px; }
+			.summary-grid, .severity-row { grid-template-columns: 1fr; }
+			.metric .value { font-size: 1.45rem; }
+			th, td { padding: 12px 10px; }
+		}
+	</style>
+</head>
+<body>
+	<div class="app-shell">
+		<header class="app-header">
+			<div class="brand">
+				<div class="brand-mark" aria-hidden="true">
+					<svg viewBox="0 0 24 24" role="img" aria-label="Shield icon">
+						<path d="M12 2 4 5.2V11c0 5.3 3.7 10.2 8 11 4.3-.8 8-5.7 8-11V5.2L12 2Zm0 3.1 5 2v3.7c0 3.9-2.5 7.8-5 8.7-2.5-.9-5-4.8-5-8.7V7.1l5-2Z"></path>
+					</svg>
+				</div>
+				<div>
+					<h1>AWS Security Scanner</h1>
+					<p>Connect to AWS, run security checks, and export a professional report.</p>
+				</div>
+			</div>
+			<div class="status-pill" id="topStatus">Ready</div>
+		</header>
+
+		<main class="panel">
+			<!-- VIEW 1 -->
+			<section class="view active" id="viewCredentials">
+				<div class="view-grid">
+					<div class="hero-card">
+						<h2>Secure AWS account assessment</h2>
+						<p class="muted">Enter AWS credentials to verify access and begin the scanner workflow.</p>
+						<ul class="service-list">
+							<li><span class="dot"></span> IAM security posture checks</li>
+							<li><span class="dot"></span> S3 public exposure and encryption checks</li>
+							<li><span class="dot"></span> EC2 network and storage checks</li>
+							<li><span class="dot"></span> CloudTrail visibility and integrity checks</li>
+						</ul>
+					</div>
+
+					<div class="form-card connect-card">
+						<h2>Credentials Form</h2>
+						<div class="form-grid">
+							<div>
+								<label for="accessKey">AWS Access Key ID</label>
+								<input id="accessKey" type="text" autocomplete="off" placeholder="AKIA..." />
+							</div>
+							<div>
+								<label for="secretKey">AWS Secret Access Key</label>
+								<input id="secretKey" type="password" autocomplete="off" placeholder="Enter secret key" />
+							</div>
+							<div>
+								<label for="region">Region</label>
+								<select id="region">
+									<option value="us-east-1">US East (N. Virginia) us-east-1</option>
+									<option value="us-east-2">US East (Ohio) us-east-2</option>
+									<option value="us-west-1">US West (N. California) us-west-1</option>
+									<option value="us-west-2">US West (Oregon) us-west-2</option>
+									<option value="ca-central-1">Canada (Central) ca-central-1</option>
+									<option value="eu-west-1">Europe (Ireland) eu-west-1</option>
+									<option value="eu-west-2">Europe (London) eu-west-2</option>
+									<option value="eu-central-1">Europe (Frankfurt) eu-central-1</option>
+									<option value="ap-south-1">Asia Pacific (Mumbai) ap-south-1</option>
+									<option value="ap-southeast-1">Asia Pacific (Singapore) ap-southeast-1</option>
+									<option value="ap-southeast-2">Asia Pacific (Sydney) ap-southeast-2</option>
+									<option value="ap-northeast-1">Asia Pacific (Tokyo) ap-northeast-1</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="actions">
+							<button class="primary" id="connectBtn" type="button">Connect &amp; Verify</button>
+						</div>
+
+						<div class="inline-message" id="connectMessage" role="alert" aria-live="polite"></div>
+					</div>
+				</div>
+			</section>
+
+			<!-- VIEW 2 -->
+			<section class="view" id="viewReady">
+				<div class="content-card">
+					<div class="account-banner">
+						<div>
+							<div class="muted">Connected account</div>
+							<strong id="connectedAccount">Unknown</strong>
+						</div>
+						<div class="actions">
+							<button class="primary" id="scanBtn" type="button">Start Scan</button>
+						</div>
+					</div>
+
+					<h2>Ready to Scan</h2>
+					<p class="muted">The scan will evaluate IAM, S3, EC2, and CloudTrail controls across the connected account.</p>
+
+					<ul class="service-list">
+						<li><span class="dot"></span> IAM</li>
+						<li><span class="dot"></span> S3</li>
+						<li><span class="dot"></span> EC2</li>
+						<li><span class="dot"></span> CloudTrail</li>
+					</ul>
+
+					<div class="inline-message" id="readyMessage" role="alert" aria-live="polite"></div>
+				</div>
+			</section>
+
+			<!-- VIEW 2.5 LOADING -->
+			<section class="view" id="viewLoading">
+				<div class="loading-view loading-card">
+					<div>
+						<div class="spinner" aria-hidden="true"></div>
+						<h2>Scanning AWS account</h2>
+						<p class="muted">Running security checks. Please wait while results are collected and summarized.</p>
+					</div>
+				</div>
+			</section>
+
+			<!-- VIEW 3 -->
+			<section class="view" id="viewResults">
+				<div class="summary-card">
+					<div class="account-banner">
+						<div>
+							<div class="muted">Connected account</div>
+							<strong id="resultsAccount">Unknown</strong>
+						</div>
+						<div class="actions">
+							<button class="secondary" id="backToReadyBtn" type="button">Back</button>
+							<button class="primary" id="downloadBtn" type="button">Download Report</button>
+						</div>
+					</div>
+
+					<div class="view-grid" style="grid-template-columns: 0.9fr 1.1fr; align-items: start;">
+						<div>
+							<div class="muted">Risk Score</div>
+							<div class="risk-score" id="riskScore">100</div>
+							<p class="muted" id="riskLabel">Low risk</p>
+						</div>
+						<div>
+							<div class="summary-grid">
+								<div class="metric"><div class="label">Total checks</div><div class="value" id="totalChecks">0</div></div>
+								<div class="metric"><div class="label">Passed</div><div class="value" id="passCount" style="color: var(--success)">0</div></div>
+								<div class="metric"><div class="label">Failed</div><div class="value" id="failCount" style="color: var(--danger)">0</div></div>
+								<div class="metric"><div class="label">Visible findings</div><div class="value" id="visibleCount">0</div></div>
+							</div>
+
+							<div class="severity-row" style="margin-top: 16px;">
+								<div class="metric"><div class="label">Critical</div><div class="value" id="criticalCount" style="color: #fecaca">0</div></div>
+								<div class="metric"><div class="label">High</div><div class="value" id="highCount" style="color: #fed7aa">0</div></div>
+								<div class="metric"><div class="label">Medium</div><div class="value" id="mediumCount" style="color: #fef08a">0</div></div>
+								<div class="metric"><div class="label">Low</div><div class="value" id="lowCount" style="color: #bfdbfe">0</div></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="table-card" style="margin-top: 18px;">
+					<h2>Results Dashboard</h2>
+					<p class="muted">Filter findings by status or service to inspect the exact controls that failed.</p>
+
+					<div class="filters" id="filters"></div>
+
+					<div class="table-wrap">
+						<table>
+							<thead>
+								<tr>
+									<th>Severity</th>
+									<th>Check ID</th>
+									<th>Service</th>
+									<th>Resource</th>
+									<th>Status</th>
+									<th>Detail</th>
+								</tr>
+							</thead>
+							<tbody id="resultsBody"></tbody>
+						</table>
+					</div>
+
+					<div class="footer-actions">
+						<div class="muted" id="tableHint">Showing all results.</div>
+						<div class="actions">
+							<button class="secondary" id="reloadBtn" type="button">New Scan</button>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+	</div>
+
+	<script>
+		const state = {
+			accountId: "",
+			arn: "",
+			region: "us-east-1",
+			results: [],
+			summary: {},
+			filter: "ALL",
+		};
+
+		const views = {
+			credentials: document.getElementById("viewCredentials"),
+			ready: document.getElementById("viewReady"),
+			loading: document.getElementById("viewLoading"),
+			results: document.getElementById("viewResults"),
+		};
+
+		const topStatus = document.getElementById("topStatus");
+		const connectMessage = document.getElementById("connectMessage");
+		const readyMessage = document.getElementById("readyMessage");
+		const connectBtn = document.getElementById("connectBtn");
+		const scanBtn = document.getElementById("scanBtn");
+		const downloadBtn = document.getElementById("downloadBtn");
+		const reloadBtn = document.getElementById("reloadBtn");
+		const backToReadyBtn = document.getElementById("backToReadyBtn");
+		const accessKeyInput = document.getElementById("accessKey");
+		const secretKeyInput = document.getElementById("secretKey");
+		const regionSelect = document.getElementById("region");
+
+		const serviceFilters = ["ALL", "FAIL", "IAM", "S3", "EC2", "CloudTrail"];
+
+		function setView(name) {
+			Object.values(views).forEach(view => view.classList.remove("active"));
+			views[name].classList.add("active");
+		}
+
+		function setStatus(text) {
+			topStatus.textContent = text;
+		}
+
+		function showMessage(el, text, type) {
+			el.textContent = text;
+			el.className = `inline-message show ${type}`;
+		}
+
+		function clearMessage(el) {
+			el.textContent = "";
+			el.className = "inline-message";
+		}
+
+		function getPayload() {
+			return {
+				access_key: accessKeyInput.value.trim(),
+				secret_key: secretKeyInput.value,
+				region: regionSelect.value,
+			};
+		}
+
+		function setButtonsDisabled(disabled) {
+			[connectBtn, scanBtn, downloadBtn, reloadBtn, backToReadyBtn].forEach(btn => {
+				if (btn) btn.disabled = disabled;
+			});
+		}
+
+		async function postJson(url, body) {
+			const response = await fetch(url, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			});
+
+			const contentType = response.headers.get("content-type") || "";
+			if (!response.ok) {
+				if (contentType.includes("application/json")) {
+					const errorPayload = await response.json();
+					throw new Error(errorPayload.error || `Request failed with status ${response.status}`);
+				}
+				throw new Error(`Request failed with status ${response.status}`);
+			}
+
+			if (contentType.includes("application/json")) {
+				return response.json();
+			}
+
+			return response;
+		}
+
+		function riskClass(score) {
+			if (score >= 80) return "risk-high";
+			if (score >= 50) return "risk-medium";
+			return "risk-low";
+		}
+
+		function riskLabel(score) {
+			if (score >= 80) return "Healthy posture";
+			if (score >= 50) return "Moderate risk";
+			return "High risk";
+		}
+
+		function colorClassForSeverity(severity) {
+			const normalized = String(severity || "").toUpperCase();
+			if (normalized === "CRITICAL") return "severity-critical";
+			if (normalized === "HIGH") return "severity-high";
+			if (normalized === "MEDIUM") return "severity-medium";
+			return "severity-low";
+		}
+
+		function filteredResults() {
+			return state.results.filter(result => {
+				if (state.filter === "ALL") return true;
+				if (state.filter === "FAIL") return String(result.status || "").toUpperCase() === "FAIL";
+				return String(result.service || "").toUpperCase() === state.filter;
+			});
+		}
+
+		function renderFilters() {
+			const filtersEl = document.getElementById("filters");
+			filtersEl.innerHTML = "";
+
+			serviceFilters.forEach(filter => {
+				const button = document.createElement("button");
+				button.type = "button";
+				button.className = `filter-btn ${state.filter === filter ? "active" : ""}`;
+				button.textContent = filter === "ALL" ? "All" : (filter === "FAIL" ? "FAIL only" : filter);
+				button.addEventListener("click", () => {
+					state.filter = filter;
+					renderFilters();
+					renderTable();
+				});
+				filtersEl.appendChild(button);
+			});
+		}
+
+		function renderTable() {
+			const tbody = document.getElementById("resultsBody");
+			const rows = filteredResults();
+			document.getElementById("visibleCount").textContent = rows.length;
+			document.getElementById("tableHint").textContent =
+				state.filter === "ALL"
+					? "Showing all results."
+					: `Showing ${rows.length} result(s) for ${state.filter}.`;
+
+			tbody.innerHTML = "";
+
+			if (!rows.length) {
+				const empty = document.createElement("tr");
+				empty.innerHTML = `<td colspan="6" class="muted">No findings match the current filter.</td>`;
+				tbody.appendChild(empty);
+				return;
+			}
+
+			rows.forEach(result => {
+				const tr = document.createElement("tr");
+				tr.innerHTML = `
+					<td><span class="badge ${colorClassForSeverity(result.severity)}">${result.severity || "UNKNOWN"}</span></td>
+					<td>${result.id || "-"}</td>
+					<td>${result.service || "-"}</td>
+					<td>${result.resource || "-"}</td>
+					<td class="${String(result.status || "").toLowerCase() === "pass" ? "status-pass" : "status-fail"}">${result.status || "-"}</td>
+					<td>${result.detail || ""}</td>
+				`;
+				tbody.appendChild(tr);
+			});
+		}
+
+		function renderSummary() {
+			const summary = state.summary || {};
+			const score = Number(summary.risk_score || 0);
+			const scoreEl = document.getElementById("riskScore");
+			scoreEl.textContent = score;
+			scoreEl.className = `risk-score ${riskClass(score)}`;
+			document.getElementById("riskLabel").textContent = riskLabel(score);
+
+			document.getElementById("totalChecks").textContent = summary.total ?? state.results.length;
+			document.getElementById("passCount").textContent = summary.pass_count ?? 0;
+			document.getElementById("failCount").textContent = summary.fail_count ?? 0;
+			document.getElementById("criticalCount").textContent = summary.critical_count ?? 0;
+			document.getElementById("highCount").textContent = summary.high_count ?? 0;
+			document.getElementById("mediumCount").textContent = summary.medium_count ?? 0;
+			document.getElementById("lowCount").textContent = summary.low_count ?? 0;
+		}
+
+		function showReadyView() {
+			document.getElementById("connectedAccount").textContent = state.accountId || "Unknown";
+			setStatus(`Connected: ${state.accountId || "Unknown"}`);
+			setView("ready");
+		}
+
+		function showResultsView() {
+			document.getElementById("resultsAccount").textContent = state.accountId || "Unknown";
+			renderSummary();
+			renderFilters();
+			renderTable();
+			setStatus(`Scan complete: ${state.results.length} findings`);
+			setView("results");
+		}
+
+		async function connectAccount() {
+			clearMessage(connectMessage);
+			const { access_key, secret_key, region } = getPayload();
+
+			if (!access_key || !secret_key || !region) {
+				showMessage(connectMessage, "Please fill in the access key, secret key, and region.", "error");
+				return;
+			}
+
+			setButtonsDisabled(true);
+			setStatus("Verifying credentials...");
+
+			try {
+				const data = await postJson("/connect", { access_key, secret_key, region });
+				if (!data.success) {
+					throw new Error(data.error || "Unable to verify credentials.");
+				}
+
+				state.accountId = data.account_id || "Unknown";
+				state.arn = data.arn || "";
+				showMessage(connectMessage, `Connected to account ${state.accountId}.`, "success");
+				showReadyView();
+			} catch (error) {
+				showMessage(connectMessage, error.message || "Unable to connect.", "error");
+				setStatus("Connection failed");
+			} finally {
+				setButtonsDisabled(false);
+			}
+		}
+
+		async function startScan() {
+			clearMessage(readyMessage);
+			const { access_key, secret_key, region } = getPayload();
+
+			setButtonsDisabled(true);
+			setStatus("Scan in progress...");
+			setView("loading");
+
+			try {
+				const data = await postJson("/scan", { access_key, secret_key, region });
+				if (!data.success) {
+					throw new Error(data.error || "Scan failed.");
+				}
+
+				state.results = Array.isArray(data.results) ? data.results : [];
+				state.summary = data.summary || {};
+				state.filter = "ALL";
+				showResultsView();
+			} catch (error) {
+				setView("ready");
+				showMessage(readyMessage, error.message || "Unable to run scan.", "error");
+				setStatus("Scan failed");
+			} finally {
+				setButtonsDisabled(false);
+			}
+		}
+
+		async function downloadReport() {
+			try {
+				setButtonsDisabled(true);
+				setStatus("Preparing report...");
+
+				const response = await fetch("/report", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						results: state.results,
+						summary: state.summary,
+						account_id: state.accountId,
+					}),
+				});
+
+				if (!response.ok) {
+					throw new Error(`Report generation failed with status ${response.status}`);
+				}
+
+				const blob = await response.blob();
+				const url = window.URL.createObjectURL(blob);
+				const link = document.createElement("a");
+				link.href = url;
+				link.download = "aws-security-report.html";
+				document.body.appendChild(link);
+				link.click();
+				link.remove();
+				window.URL.revokeObjectURL(url);
+				setStatus("Report downloaded");
+			} catch (error) {
+				alert(error.message || "Unable to download report.");
+				setStatus("Report download failed");
+			} finally {
+				setButtonsDisabled(false);
+			}
+		}
+
+		connectBtn.addEventListener("click", connectAccount);
+		scanBtn.addEventListener("click", startScan);
+		downloadBtn.addEventListener("click", downloadReport);
+		reloadBtn.addEventListener("click", () => setView("credentials"));
+		backToReadyBtn.addEventListener("click", () => {
+			document.getElementById("connectedAccount").textContent = state.accountId || "Unknown";
+			setStatus(`Connected: ${state.accountId || "Unknown"}`);
+			setView("ready");
+		});
+
+		[accessKeyInput, secretKeyInput, regionSelect].forEach(input => {
+			input.addEventListener("input", () => clearMessage(connectMessage));
+		});
+
+		regionSelect.value = "us-east-1";
+		setStatus("Ready");
+	</script>
+</body>
+</html>

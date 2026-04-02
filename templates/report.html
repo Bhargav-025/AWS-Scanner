@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Security Scan Report</title>
+    <style>
+        :root {
+            --ink: #1f2937;
+            --muted: #5b6472;
+            --border: #d7dde5;
+            --surface: #f8fafc;
+            --surface-2: #eef3f8;
+            --header: #0f172a;
+            --accent: #2563eb;
+            --critical: #dc2626;
+            --high: #f97316;
+            --medium: #eab308;
+            --low: #3b82f6;
+            --pass: #16a34a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #e9edf3;
+            color: var(--ink);
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.45;
+        }
+
+        body {
+            padding: 28px 0 42px;
+        }
+
+        .page {
+            width: min(1120px, calc(100% - 40px));
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0f172a 0%, #111f35 100%);
+            color: #ffffff;
+            padding: 30px 34px 26px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .title-block h1 {
+            margin: 0;
+            font-size: 2.15rem;
+            letter-spacing: 0.2px;
+        }
+
+        .title-block p {
+            margin: 10px 0 0;
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 0.98rem;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .meta-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            padding: 14px 16px;
+        }
+
+        .meta-label {
+            display: block;
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.72);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .meta-value {
+            font-size: 1rem;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .content {
+            padding: 30px 34px 24px;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+
+        .section-title {
+            font-size: 1.18rem;
+            margin: 0 0 14px;
+            color: var(--header);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 18px;
+        }
+
+        .summary-box,
+        .breakdown-box,
+        .service-card {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: #ffffff;
+            padding: 20px;
+        }
+
+        .risk-wrap {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .risk-score {
+            min-width: 150px;
+            text-align: center;
+            padding: 18px 16px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .risk-score .value {
+            font-size: 3.4rem;
+            line-height: 0.9;
+            font-weight: 900;
+            margin: 0;
+        }
+
+        .risk-score .label {
+            margin-top: 8px;
+            font-size: 0.86rem;
+            color: var(--muted);
+        }
+
+        .risk-high { color: var(--pass); }
+        .risk-medium { color: var(--high); }
+        .risk-low { color: var(--critical); }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            flex: 1;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 14px;
+        }
+
+        .stat-card .label {
+            color: var(--muted);
+            font-size: 0.84rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .pass { color: var(--pass); }
+        .fail { color: var(--critical); }
+
+        .breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+        }
+
+        .breakdown-table th,
+        .breakdown-table td,
+        .findings-table th,
+        .findings-table td {
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .breakdown-table th,
+        .findings-table th {
+            background: var(--surface-2);
+            font-size: 0.86rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .breakdown-table td:first-child {
+            font-weight: 700;
+        }
+
+        .severity-pill,
+        .status-pill {
+            display: inline-block;
+            min-width: 86px;
+            text-align: center;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-weight: 700;
+            font-size: 0.76rem;
+            letter-spacing: 0.03em;
+        }
+
+        .severity-critical {
+            background: #fee2e2;
+            color: var(--critical);
+            border: 1px solid #fca5a5;
+        }
+
+        .severity-high {
+            background: #ffedd5;
+            color: var(--high);
+            border: 1px solid #fdba74;
+        }
+
+        .severity-medium {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fcd34d;
+        }
+
+        .severity-low {
+            background: #dbeafe;
+            color: var(--low);
+            border: 1px solid #93c5fd;
+        }
+
+        .status-pass {
+            background: #dcfce7;
+            color: var(--pass);
+            border: 1px solid #86efac;
+        }
+
+        .status-fail {
+            background: #fee2e2;
+            color: var(--critical);
+            border: 1px solid #fca5a5;
+        }
+
+        .service-title {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .service-title h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--header);
+        }
+
+        .service-title .count {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .findings-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .findings-table th:nth-child(1) { width: 118px; }
+        .findings-table th:nth-child(2) { width: 120px; }
+        .findings-table th:nth-child(4) { width: 110px; }
+        .findings-table th:nth-child(5) { width: 360px; }
+
+        .findings-table td {
+            word-break: break-word;
+        }
+
+        .findings-table tr:nth-child(even) td {
+            background: #fcfdff;
+        }
+
+        .service-section {
+            margin-top: 20px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .footer {
+            padding: 18px 34px 26px;
+            border-top: 1px solid var(--border);
+            background: #fafcff;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .disclaimer {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .disclaimer strong {
+            color: var(--header);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+
+            .page {
+                width: 100%;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .header {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .summary-box,
+            .breakdown-box,
+            .service-card,
+            .meta-card,
+            .stat-card,
+            .risk-score,
+            .empty-state,
+            .findings-table th,
+            .findings-table td,
+            .breakdown-table th,
+            .breakdown-table td {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .service-section {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+
+        @page {
+            margin: 18mm;
+        }
+    </style>
+</head>
+<body>
+    {% set services = ['IAM', 'S3', 'EC2', 'CloudTrail'] %}
+    {% set risk_score = summary.risk_score if summary and summary.risk_score is not none else 0 %}
+    {% set total_checks = summary.total if summary and summary.total is not none else 0 %}
+    {% set pass_count = summary.pass_count if summary and summary.pass_count is not none else 0 %}
+    {% set fail_count = summary.fail_count if summary and summary.fail_count is not none else 0 %}
+    {% set critical_count = summary.critical_count if summary and summary.critical_count is not none else 0 %}
+    {% set high_count = summary.high_count if summary and summary.high_count is not none else 0 %}
+    {% set medium_count = summary.medium_count if summary and summary.medium_count is not none else 0 %}
+    {% set low_count = summary.low_count if summary and summary.low_count is not none else 0 %}
+    {% set risk_class = 'risk-high' if risk_score >= 80 else 'risk-medium' if risk_score >= 50 else 'risk-low' %}
+
+    <div class="page">
+        <header class="header">
+            <div class="header-top">
+                <div class="title-block">
+                    <h1>AWS Security Scan Report</h1>
+                    <p>Professional offline report generated from an AWS account security assessment.</p>
+                </div>
+                <div class="muted" style="color: rgba(255,255,255,0.78); font-size: 0.92rem; text-align: right;">
+                    Printable Jinja2 template<br>
+                    {{ scan_date or 'Scan date unavailable' }}
+                </div>
+            </div>
+
+            <div class="meta-grid">
+                <div class="meta-card">
+                    <span class="meta-label">Account ID</span>
+                    <div class="meta-value">{{ account_id or 'Unknown' }}</div>
+                </div>
+                <div class="meta-card">
+                    <span class="meta-label">Scan Date</span>
+                    <div class="meta-value">{{ scan_date or 'Unknown' }}</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="section">
+                <h2 class="section-title">Executive Summary</h2>
+                <div class="summary-grid">
+                    <div class="summary-box">
+                        <div class="risk-wrap">
+                            <div class="risk-score">
+                                <div class="value {{ risk_class }}">{{ risk_score }}</div>
+                                <div class="label">Risk Score</div>
+                            </div>
+                            <div class="summary-stats">
+                                <div class="stat-card">
+                                    <div class="label">Total Checks</div>
+                                    <div class="value">{{ total_checks }}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="label">Passed</div>
+                                    <div class="value pass">{{ pass_count }}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="label">Failed</div>
+                                    <div class="value fail">{{ fail_count }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="breakdown-box">
+                        <h3 class="section-title" style="margin-top: 0;">Severity Breakdown</h3>
+                        <table class="breakdown-table">
+                            <thead>
+                                <tr>
+                                    <th>Severity</th>
+                                    <th>Fail Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="severity-pill severity-critical">CRITICAL</span></td>
+                                    <td>{{ critical_count }}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="severity-pill severity-high">HIGH</span></td>
+                                    <td>{{ high_count }}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="severity-pill severity-medium">MEDIUM</span></td>
+                                    <td>{{ medium_count }}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="severity-pill severity-low">LOW</span></td>
+                                    <td>{{ low_count }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Findings</h2>
+                <p class="muted" style="margin-top: -4px; margin-bottom: 18px;">Each service is shown in its own table so the report reads cleanly in print or PDF export.</p>
+
+                {% for service in services %}
+                    {% set service_results = results | selectattr('service', 'equalto', service) | list %}
+                    <article class="service-section">
+                        <div class="service-card">
+                            <div class="service-title">
+                                <h3>{{ service }}</h3>
+                                <div class="count">{{ service_results|length }} finding{{ 's' if service_results|length != 1 else '' }}</div>
+                            </div>
+
+                            {% if service_results %}
+                                <table class="findings-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Severity</th>
+                                            <th>Check ID</th>
+                                            <th>Resource</th>
+                                            <th>Status</th>
+                                            <th>Detail</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for result in service_results %}
+                                            {% set severity = (result.severity or 'LOW')|upper %}
+                                            {% set status = (result.status or 'FAIL')|upper %}
+                                            {% set severity_class = 'severity-critical' if severity == 'CRITICAL' else 'severity-high' if severity == 'HIGH' else 'severity-medium' if severity == 'MEDIUM' else 'severity-low' %}
+                                            {% set status_class = 'status-pass' if status == 'PASS' else 'status-fail' %}
+                                            <tr>
+                                                <td><span class="severity-pill {{ severity_class }}">{{ severity }}</span></td>
+                                                <td>{{ result.id or '-' }}</td>
+                                                <td>{{ result.resource or '-' }}</td>
+                                                <td><span class="status-pill {{ status_class }}">{{ status }}</span></td>
+                                                <td>{{ result.detail or '-' }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <div class="empty-state">No findings were recorded for {{ service }}.</div>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="disclaimer">
+                <strong>Disclaimer:</strong>
+                <span>This report is generated for educational/audit purposes only.</span>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
