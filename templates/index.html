@@ -468,6 +468,10 @@
 								<input id="secretKey" type="password" autocomplete="off" placeholder="Enter secret key" />
 							</div>
 							<div>
+								<label for="session_token">Session Token (optional — only for AWS Educate / temporary credentials)</label>
+								<input id="session_token" type="password" autocomplete="off" placeholder="Paste session token here (leave blank for regular AWS)" />
+							</div>
+							<div>
 								<label for="region">Region</label>
 								<select id="region">
 									<option value="us-east-1">US East (N. Virginia) us-east-1</option>
@@ -631,6 +635,7 @@
 		const backToReadyBtn = document.getElementById("backToReadyBtn");
 		const accessKeyInput = document.getElementById("accessKey");
 		const secretKeyInput = document.getElementById("secretKey");
+		const sessionTokenInput = document.getElementById("session_token");
 		const regionSelect = document.getElementById("region");
 
 		const serviceFilters = ["ALL", "FAIL", "IAM", "S3", "EC2", "CloudTrail"];
@@ -658,6 +663,7 @@
 			return {
 				access_key: accessKeyInput.value.trim(),
 				secret_key: secretKeyInput.value,
+				session_token: sessionTokenInput.value,
 				region: regionSelect.value,
 			};
 		}
@@ -814,7 +820,7 @@
 			setStatus("Verifying credentials...");
 
 			try {
-				const data = await postJson("/connect", { access_key, secret_key, region });
+				const data = await postJson("/connect", { access_key, secret_key, session_token: sessionTokenInput.value, region });
 				if (!data.success) {
 					throw new Error(data.error || "Unable to verify credentials.");
 				}
@@ -840,7 +846,7 @@
 			setView("loading");
 
 			try {
-				const data = await postJson("/scan", { access_key, secret_key, region });
+				const data = await postJson("/scan", { access_key, secret_key, session_token: sessionTokenInput.value, region });
 				if (!data.success) {
 					throw new Error(data.error || "Scan failed.");
 				}
@@ -905,7 +911,7 @@
 			setView("ready");
 		});
 
-		[accessKeyInput, secretKeyInput, regionSelect].forEach(input => {
+		[accessKeyInput, secretKeyInput, sessionTokenInput, regionSelect].forEach(input => {
 			input.addEventListener("input", () => clearMessage(connectMessage));
 		});
 

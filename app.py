@@ -15,6 +15,7 @@ def _build_session(payload):
 		aws_access_key_id=payload.get("access_key"),
 		aws_secret_access_key=payload.get("secret_key"),
 		region_name=payload.get("region"),
+		aws_session_token=payload.get("session_token"),
 	)
 
 
