@@ -19,7 +19,7 @@ AWS Cloud Security Posture Manager is a lightweight, high-performance security s
 
 ## 📸 Dashboard Preview
 
-To be added soon
+![DashBoard](image.png)
 
 >
 
