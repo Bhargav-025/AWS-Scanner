@@ -78,6 +78,4 @@ Currently, SkyScan checks for:
 
 ---
 
-**Developed by [Your Name]** _Computer Science Major | Cloud Security Enthusiast_
-
----
+## **Contribution by Bhargav**
